@@ -49,22 +49,22 @@
   ; TODO rewrite this - this is a pretty ugly sequence of function calls
   (map #(apply hash-map %) (map #(interleave [:id :messageBody] %) (map vector (map str (range 0 (count msgs))) msgs)))) 
 
-(defn enqueue-message [msg]
-  (sqs/send-message sqs-queue msg))
+(defn enqueue-message [queue msg]
+  (sqs/send-message queue msg))
 
-(defn enqueue-messages [msgs]
+(defn enqueue-messages [queue msgs]
   (let [batch-message (vec (remap-request msgs))]
     (do 
-      (sqs/send-message-batch :queueUrl sqs-queue :entries batch-message))))
+      (sqs/send-message-batch :queueUrl queue :entries batch-message))))
 
 (defn process-message [entry]
   (->>
     (process-log-entry entry)
-    (generate-string)))
+    (cheshire/generate-string)))
 
-(defn parse-and-send [logfile]
+(defn parse-and-send [queue logfile]
   (let [log-entries (parse-log logfile)]
     (do
       (log/info (format "Parsing and sending %d ELB log lines" (count log-entries)))
-      (dorun (pmap enqueue-messages (partition-all 10 10 (map process-message log-entries))))
+      (dorun (pmap (partial enqueue-messages queue) (partition-all 10 10 (map process-message log-entries))))
       (log/info "Finished processing"))))
