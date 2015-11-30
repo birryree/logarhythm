@@ -1,7 +1,7 @@
 (ns ^{:author "William Lee"
       :doc "Parser for ELB-formatted log data"}
   logarhythm.elb
-  (:require [clojure.data.csv :as csv]
+  (:require [clojure-csv.core :as csv]
             [clojure.java.io :as io]
             [semantic-csv.core :refer :all]
             [clojure.string :as string]
@@ -32,7 +32,7 @@
 (defn parse-log [logfile]
   (with-open [in-file (io/reader logfile)]
     (->>
-      (csv/read-csv in-file :separator \space)
+      (csv/parse-csv in-file :delimiter \space)
       (mappify {:header log-header})
       (cast-with cast-map {:exception-handler handle-cast-exception})
       doall)))
